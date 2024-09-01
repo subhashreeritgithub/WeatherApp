@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    
+</head>
+<style>
+    /* Default Light Mode Styles */
+body {
+    background-color: #f5f5f5;
+    color: #333;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    text-align: center;
+    width: 100%;
+    max-width: 600px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+    margin-bottom: 20px;
+}
+
+#modeToggle {
+    margin-top: 10px;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #333;
+    color: #fff;
+    cursor: pointer;
+}
+
+#modeToggle:hover {
+    background-color: #555;
+}
+
+.controls {
+    margin-bottom: 20px;
+}
+
+#cityInput {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    color: #333;
+    width: 70%;
+    box-sizing: border-box;
+}
+
+#searchBtn, #geoBtn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+#searchBtn:hover, #geoBtn:hover {
+    background-color: #0056b3;
+}
+
+.weather-info {
+    margin-top: 20px;
+}
+
+#favorites {
+    margin-top: 20px;
+}
+
+#favoritesList {
+    list-style: none;
+    padding: 0;
+}
+
+#favoritesList li {
+    padding: 10px;
+    cursor: pointer;
+}
+
+#favoritesList li:hover {
+    background-color: #f0f0f0;
+}
+
+/* Dark Mode Styles */
+body.dark-mode {
+    background-color: #121212;
+    color: #e0e0e0;
+}
+
+.container.dark-mode {
+    background-color: #1e1e1e;
+}
+
+#modeToggle.dark-mode {
+    background-color: #fff;
+    color: #333;
+}
+
+#cityInput.dark-mode {
+    background-color: #333;
+    color: #e0e0e0;
+    border: 1px solid #555;
+}
+
+#searchBtn.dark-mode, #geoBtn.dark-mode {
+    background-color: #6200ea;
+}
+
+#searchBtn.dark-mode:hover, #geoBtn.dark-mode:hover {
+    background-color: #3700b3;
+}
+
+</style>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Weather App</h1>
+            <button id="modeToggle">Toggle Dark Mode</button>
+        </div>
+        <div class="controls">
+            <input type="text" id="cityInput" placeholder="Search for a city...">
+            <button id="searchBtn">Get Weather</button>
+            <button id="geoBtn">Use My Location</button>
+        </div>
+        <div id="weather" class="weather-info">
+            <!-- Weather information will be displayed here -->
+        </div>
+        <div id="favorites">
+            <h2>Favorite Cities</h2>
+            <ul id="favoritesList">
+                <!-- Favorite cities will be listed here -->
+            </ul>
+        </div>
+    </div>
+   <script > 
+        const apiKey = '613657f7393a6c512abf3732ef3c990e'; // Replace with your OpenWeatherMap API key
+
+document.addEventListener('DOMContentLoaded', () => {
+    const modeToggle = document.getElementById('modeToggle');
+    const body = document.body;
+    const container = document.querySelector('.container');
+    const cityInput = document.getElementById('cityInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const geoBtn = document.getElementById('geoBtn');
+    const favoritesList = document.getElementById('favoritesList');
+
+    // Dark mode toggle
+    modeToggle.addEventListener('click', () => {
+        body.classList.toggle('dark-mode');
+        container.classList.toggle('dark-mode');
+        modeToggle.classList.toggle('dark-mode');
+        cityInput.classList.toggle('dark-mode');
+        searchBtn.classList.toggle('dark-mode');
+        geoBtn.classList.toggle('dark-mode');
+    });
+
+    // Search functionality
+    searchBtn.addEventListener('click', () => {
+        const city = cityInput.value.trim();
+        if (city) {
+            fetchWeather(city);
+        } else {
+            displayError('Please enter a city name.');
+        }
+    });
+
+    // Geolocation functionality
+    geoBtn.addEventListener('click', () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(position => {
+                const { latitude, longitude } = position.coords;
+                fetchWeatherByCoords(latitude, longitude);
+            }, handleError);
+        } else {
+            displayError('Geolocation is not supported by this browser.');
+        }
+    });
+
+    // Function to fetch weather data by city name
+    async function fetchWeather(city) {
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data.cod === 200) {
+                displayWeather(data);
+                addFavoriteCity(city);
+            } else {
+                displayError('City not found!');
+            }
+        } catch (error) {
+            displayError('An error occurred!');
+        }
+    }
+
+    // Function to fetch weather data by geolocation
+    async function fetchWeatherByCoords(lat, lon) {
+        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data.cod === 200) {
+                displayWeather(data);
+            } else {
+                displayError('Unable to fetch weather data!');
+            }
+        } catch (error) {
+            displayError('An error occurred!');
+        }
+    }
+
+    // Function to display weather data
+    function displayWeather(data) {
+        const weatherHTML = `
+            <h2>${data.name}</h2>
+            <p>Temperature: ${data.main.temp}°C</p>
+            <p>Condition: ${data.weather[0].description}</p>
+            <img src="http://openweathermap.org/img/wn/${data.weather[0].icon}.png" alt="Weather icon">
+        `;
+        document.getElementById('weather').innerHTML = weatherHTML;
+    }
+
+    // Function to display error messages
+    function displayError(message) {
+        document.getElementById('weather').innerHTML = `<p class="error">${message}</p>`;
+    }
+
+    // Function to handle geolocation errors
+    function handleError(error) {
+        switch(error.code) {
+            case error.PERMISSION_DENIED:
+                displayError('User denied the request for Geolocation.');
+                break;
+            case error.POSITION_UNAVAILABLE:
+                displayError('Location information is unavailable.');
+                break;
+            case error.TIMEOUT:
+                displayError('The request to get user location timed out.');
+                break;
+            case error.UNKNOWN_ERROR:
+                displayError('An unknown error occurred.');
+                break;
+        }
+    }
+
+    // Function to add city to favorites
+    function addFavoriteCity(city) {
+        // Check if the city is already in favorites
+        if (![...favoritesList.children].some(item => item.textContent === city)) {
+            const listItem = document.createElement('li');
+            listItem.textContent = city;
+            listItem.addEventListener('click', () => fetchWeather(city));
+            favoritesList.appendChild(listItem);
+        }
+    }
+});
+
+    </script> 
+
+    
+</body>
+</html>
